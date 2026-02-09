@@ -1,9 +1,9 @@
-// client/src/components/FileSection.tsx
 import { useState, useEffect, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import api from '../api';
+import { useTranslation } from 'react-i18next'; // 引入 useTranslation
 
 interface FileMetadata {
   id: string;
@@ -12,20 +12,25 @@ interface FileMetadata {
   createdAt: string;
 }
 
-export default function FileSection() {
+interface FileSectionProps {
+  refreshKey: number;
+}
+
+export default function FileSection({ refreshKey }: FileSectionProps) {
   const [files, setFiles] = useState<FileMetadata[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const { t } = useTranslation(); // 初始化 useTranslation
 
   useEffect(() => {
     fetchFiles();
-  }, []);
+  }, [refreshKey]); // Depend on refreshKey
 
   const fetchFiles = async () => {
     try {
       const { data } = await api.get('/files');
       setFiles(data);
     } catch (error) {
-      toast.error('Failed to fetch file list');
+      toast.error(t('file_section.error_fetch_list'));
     }
   };
 
@@ -39,14 +44,14 @@ export default function FileSection() {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
       }
-      toast.success('Files uploaded successfully');
+      toast.success(t('file_section.success_upload'));
       fetchFiles();
     } catch (error) {
-      toast.error('Failed to upload files');
+      toast.error(t('file_section.error_upload'));
     } finally {
       setIsUploading(false);
     }
-  }, []);
+  }, [t]); // Add t to dependency array for useCallback
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 
@@ -60,20 +65,20 @@ export default function FileSection() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      toast.success('Download started');
+      toast.success(t('file_section.success_download'));
     } catch (error) {
-      toast.error('Download failed');
+      toast.error(t('file_section.error_download'));
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this file?')) return;
+    if (!confirm(t('file_section.confirm_delete'))) return;
     try {
       await api.delete(`/files/${id}`);
-      toast.success('File deleted');
+      toast.success(t('file_section.success_delete'));
       setFiles(files.filter((f) => f.id !== id));
     } catch (error) {
-      toast.error('Failed to delete file');
+      toast.error(t('file_section.error_delete'));
     }
   };
 
@@ -89,11 +94,11 @@ export default function FileSection() {
       >
         <input {...getInputProps()} />
         {isUploading ? (
-          <p className="text-indigo-600 dark:text-indigo-400 font-medium">Uploading...</p>
+          <p className="text-indigo-600 dark:text-indigo-400 font-medium">{t('file_section.uploading_text')}</p>
         ) : (
           <div>
-            <p className="text-gray-600 dark:text-gray-300">Drag & drop files here, or click to select files</p>
-            <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Any file type allowed</p>
+            <p className="text-gray-600 dark:text-gray-300">{t('file_section.drag_drop_text')}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">{t('file_section.file_type_hint')}</p>
           </div>
         )}
       </div>
@@ -106,13 +111,13 @@ export default function FileSection() {
                 <thead className="bg-gray-50 dark:bg-gray-800/50">
                   <tr>
                     <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-6">
-                      Name
+                      {t('file_section.table_header_name')}
                     </th>
                     <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
-                      Size
+                      {t('file_section.table_header_size')}
                     </th>
                     <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
-                      Uploaded
+                      {t('file_section.table_header_uploaded')}
                     </th>
                     <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
                       <span className="sr-only">Actions</span>
@@ -123,7 +128,7 @@ export default function FileSection() {
                   {files.length === 0 && (
                     <tr>
                       <td colSpan={4} className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                        No files uploaded yet.
+                        {t('file_section.no_files_uploaded')}
                       </td>
                     </tr>
                   )}
@@ -143,13 +148,13 @@ export default function FileSection() {
                           onClick={() => handleDownload(file)}
                           className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-4"
                         >
-                          Download
+                          {t('file_section.download_button')}
                         </button>
                         <button
                           onClick={() => handleDelete(file.id)}
                           className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                         >
-                          Delete
+                          {t('file_section.delete_button')}
                         </button>
                       </td>
                     </tr>
@@ -163,3 +168,4 @@ export default function FileSection() {
     </div>
   );
 }
+

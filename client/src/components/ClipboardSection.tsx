@@ -2,14 +2,20 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import api from '../api';
+import { useTranslation } from 'react-i18next'; // 引入 useTranslation
 
-export default function ClipboardSection() {
+interface ClipboardSectionProps {
+  refreshKey: number;
+}
+
+export default function ClipboardSection({ refreshKey }: ClipboardSectionProps) {
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { t } = useTranslation(); // 初始化 useTranslation
 
   useEffect(() => {
     fetchClipboard();
-  }, []);
+  }, [refreshKey]); // Depend on refreshKey
 
   const fetchClipboard = async () => {
     const token = localStorage.getItem('token');
@@ -21,7 +27,7 @@ export default function ClipboardSection() {
     } catch (error: any) {
       // 只有在不是 401/403 的情况下才报错，因为 401 会被拦截器处理跳转
       if (error.response?.status !== 401 && error.response?.status !== 403) {
-        toast.error('Failed to fetch clipboard');
+        toast.error(t('clipboard_section.error_fetch'));
       }
     }
   };
@@ -30,9 +36,9 @@ export default function ClipboardSection() {
     setIsLoading(true);
     try {
       await api.post('/clipboard', { content });
-      toast.success('Clipboard updated');
+      toast.success(t('clipboard_section.success_update'));
     } catch (error) {
-      toast.error('Failed to update clipboard');
+      toast.error(t('clipboard_section.error_update'));
     } finally {
       setIsLoading(false);
     }
@@ -41,18 +47,18 @@ export default function ClipboardSection() {
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(content);
-      toast.success('Copied to local clipboard');
+      toast.success(t('clipboard_section.success_copy'));
     } catch (err) {
-      toast.error('Failed to copy');
+      toast.error(t('clipboard_section.error_copy'));
     }
   };
 
   return (
     <div className="bg-white shadow sm:rounded-lg transition-colors duration-200 dark:bg-gray-800 dark:ring-1 dark:ring-white/10">
       <div className="px-4 py-5 sm:p-6">
-        <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-white">Shared Clipboard</h3>
+        <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-white">{t('clipboard_section.title')}</h3>
         <div className="mt-2 max-w-xl text-sm text-gray-500 dark:text-gray-400">
-          <p>Text shared here is accessible to all devices on the network.</p>
+          <p>{t('clipboard_section.description')}</p>
         </div>
         <div className="mt-5">
           <textarea
@@ -60,7 +66,7 @@ export default function ClipboardSection() {
             className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 transition-colors duration-200 dark:bg-gray-700 dark:text-white dark:ring-gray-600 dark:placeholder:text-gray-500 dark:focus:ring-indigo-500"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Type or paste text here..."
+            placeholder={t('clipboard_section.textarea_placeholder')}
           />
         </div>
         <div className="mt-3 flex items-center justify-end gap-x-6">
@@ -69,7 +75,7 @@ export default function ClipboardSection() {
             onClick={handleCopy}
             className="text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white transition-colors"
           >
-            Copy to device
+            {t('clipboard_section.copy_to_device_button')}
           </button>
           <button
             type="button"
@@ -77,7 +83,7 @@ export default function ClipboardSection() {
             disabled={isLoading}
             className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 transition-colors"
           >
-            {isLoading ? 'Saving...' : 'Update Cloud Clipboard'}
+            {isLoading ? t('clipboard_section.saving_button') : t('clipboard_section.update_cloud_clipboard_button')}
           </button>
         </div>
       </div>

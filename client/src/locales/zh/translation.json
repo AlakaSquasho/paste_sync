@@ -1,0 +1,53 @@
+{
+  "app_name": "粘贴与共享",
+  "dashboard": {
+    "clipboard_tab": "剪贴板",
+    "files_tab": "文件",
+    "logout_button": "退出",
+    "refresh_button": "刷新",
+    "theme_mode": {
+      "light": "亮色",
+      "dark": "暗色",
+      "system": "系统"
+    }
+  },
+  "clipboard_section": {
+    "title": "共享剪贴板",
+    "description": "在此处共享的文本可供网络上的所有设备访问。",
+    "textarea_placeholder": "在此处输入或粘贴文本...",
+    "copy_to_device_button": "复制到本地设备",
+    "update_cloud_clipboard_button": "更新云剪贴板",
+    "saving_button": "保存中...",
+    "success_update": "剪贴板已更新",
+    "error_update": "更新剪贴板失败",
+    "success_copy": "已复制到本地剪贴板",
+    "error_copy": "复制失败",
+    "error_fetch": "获取剪贴板失败"
+  },
+  "file_section": {
+    "drag_drop_text": "将文件拖放到此处，或单击以选择文件",
+    "file_type_hint": "允许任何文件类型",
+    "uploading_text": "上传中...",
+    "table_header_name": "名称",
+    "table_header_size": "大小",
+    "table_header_uploaded": "上传时间",
+    "no_files_uploaded": "尚未上传文件。",
+    "download_button": "下载",
+    "delete_button": "删除",
+    "confirm_delete": "您确定要删除此文件吗？",
+    "success_upload": "文件上传成功",
+    "error_upload": "文件上传失败",
+    "success_download": "开始下载",
+    "error_download": "下载失败",
+    "success_delete": "文件已删除",
+    "error_delete": "删除文件失败",
+    "error_fetch_list": "获取文件列表失败"
+  },
+  "login_page": {
+    "title": "登录到粘贴与共享",
+    "password_placeholder": "密码",
+    "login_button": "登录",
+    "logging_in_button": "登录中...",
+    "error_invalid_password": "密码无效或尝试次数过多。请重试。"
+  }
+}

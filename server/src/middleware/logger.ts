@@ -3,7 +3,8 @@ import { Request, Response, NextFunction } from 'express';
 import fs from 'fs';
 import path from 'path';
 
-const logDirectory = path.join(__dirname, '../../logs');
+// Use project-root logs dir so it works for both src and dist builds
+const logDirectory = path.join(__dirname, '../../../logs');
 const logFile = path.join(logDirectory, 'access.log');
 
 // Ensure log directory exists

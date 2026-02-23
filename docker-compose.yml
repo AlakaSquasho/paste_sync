@@ -6,6 +6,7 @@ services:
     volumes:
       - ./server/prisma/data:/app/prisma/data
       - ./server/uploads:/app/uploads
+      - ./server/logs:/app/logs
     environment:
       - PORT=3000
       - DATABASE_URL=file:./data/prod.db

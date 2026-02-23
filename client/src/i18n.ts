@@ -11,6 +11,9 @@ i18n
   .use(initReactI18next) // 将 i18n 实例传给 react-i18next
   .init({
     fallbackLng: 'en', // 如果检测不到语言，默认使用英文
+    supportedLngs: ['en', 'zh'],
+    nonExplicitSupportedLngs: true,
+    load: 'languageOnly',
     debug: true, // 开发模式下开启 debug
     interpolation: {
       escapeValue: false, // react 已经防止了 XSS

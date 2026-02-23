@@ -4,7 +4,7 @@ import AuthGuard from './components/AuthGuard';
 import LoginPage from './components/LoginPage';
 import ClipboardSection from './components/ClipboardSection';
 import FileSection from './components/FileSection';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useTheme, Theme } from './hooks/useTheme';
 import { SunIcon, MoonIcon, ComputerDesktopIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next'; // 引入 useTranslation
@@ -15,6 +15,11 @@ function Dashboard() {
   const { theme, setTheme } = useTheme();
   const [refreshKey, setRefreshKey] = useState(0);
   const { t, i18n } = useTranslation(); // 初始化 useTranslation
+  const currentLanguage = (i18n.resolvedLanguage || i18n.language || 'en').split('-')[0];
+
+  useEffect(() => {
+    document.documentElement.lang = currentLanguage;
+  }, [currentLanguage]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -78,7 +83,7 @@ function Dashboard() {
               {/* Language Switcher */}
               <select
                 onChange={(e) => changeLanguage(e.target.value)}
-                value={i18n.language}
+                value={currentLanguage}
                 className="rounded-md border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-indigo-500 focus:border-indigo-500"
               >
                 <option value="en">English</option>

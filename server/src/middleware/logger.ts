@@ -3,8 +3,8 @@ import { Request, Response, NextFunction } from 'express';
 import fs from 'fs';
 import path from 'path';
 
-// Use project-root logs dir so it works for both src and dist builds
-const logDirectory = path.join(__dirname, '../../../logs');
+// Resolve logs dir from runtime cwd (e.g. /app in Docker or /.../server locally)
+const logDirectory = process.env.LOG_DIR || path.resolve(process.cwd(), 'logs');
 const logFile = path.join(logDirectory, 'access.log');
 
 // Ensure log directory exists

@@ -1,5 +1,5 @@
 {
-  "app_name": "粘贴与共享",
+  "app_name": "Paste Sync",
   "dashboard": {
     "clipboard_tab": "剪贴板",
     "files_tab": "文件",
@@ -47,7 +47,7 @@
     "error_fetch_list": "获取文件列表失败"
   },
   "login_page": {
-    "title": "登录到粘贴与共享",
+    "title": "登录到 Paste Sync",
     "password_placeholder": "密码",
     "login_button": "登录",
     "logging_in_button": "登录中...",

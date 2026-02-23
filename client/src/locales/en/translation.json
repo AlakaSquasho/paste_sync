@@ -1,5 +1,5 @@
 {
-  "app_name": "Paste and Share",
+  "app_name": "Paste Sync",
   "dashboard": {
     "clipboard_tab": "Clipboard",
     "files_tab": "Files",
@@ -47,7 +47,7 @@
     "error_fetch_list": "Failed to fetch file list"
   },
   "login_page": {
-    "title": "Login to Paste and Share",
+    "title": "Login to Paste Sync",
     "password_placeholder": "Password",
     "login_button": "Login",
     "logging_in_button": "Logging in...",

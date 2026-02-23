@@ -1,5 +1,5 @@
 {
-  "name": "local-share",
+  "name": "paste-sync",
   "version": "1.0.0",
   "private": true,
   "workspaces": [

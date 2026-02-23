@@ -1,4 +1,4 @@
-# Paste and Share
+# Paste Sync
 
 一个简单高效的基于 Web 的工具，用于在局域网内的设备之间共享文本和文件。
 
@@ -21,8 +21,8 @@
 
 1. 克隆仓库：
    ```bash
-   git clone https://github.com/AlakaSquasho/paste_and_share.git
-   cd paste_and_share
+   git clone https://github.com/AlakaSquasho/paste_sync.git
+   cd paste_sync
    ```
 
 2. 启动应用：

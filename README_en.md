@@ -1,4 +1,4 @@
-# Paste and Share
+# Paste Sync
 
 A simple and efficient web-based tool for sharing text and files across devices in a local network.
 
@@ -21,8 +21,8 @@ A simple and efficient web-based tool for sharing text and files across devices 
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/AlakaSquasho/paste_and_share.git
-   cd paste_and_share
+   git clone https://github.com/AlakaSquasho/paste_sync.git
+   cd paste_sync
    ```
 
 2. Start the application:

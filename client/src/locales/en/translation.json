@@ -13,8 +13,11 @@
   },
   "clipboard_section": {
     "title": "Shared Clipboard",
-    "description": "Text shared here is accessible to all devices on the network.",
-    "textarea_placeholder": "Type or paste text here...",
+    "description": "Text or images shared here are accessible to all devices on the network.",
+    "textarea_placeholder": "Type text or paste an image from the clipboard...",
+    "image_preview_label": "Clipboard image preview",
+    "image_preview_alt": "Clipboard image preview",
+    "clear_image_button": "Clear image",
     "copy_to_device_button": "Copy to device",
     "update_cloud_clipboard_button": "Update Cloud Clipboard",
     "saving_button": "Saving...",

@@ -8,6 +8,8 @@ interface ClipboardSectionProps {
   refreshKey: number;
 }
 
+const isImageDataUrl = (value: string) => value.startsWith('data:image/');
+
 export default function ClipboardSection({ refreshKey }: ClipboardSectionProps) {
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -46,12 +48,39 @@ export default function ClipboardSection({ refreshKey }: ClipboardSectionProps) 
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(content);
+      if (isImageDataUrl(content)) {
+        const blob = await (await fetch(content)).blob();
+        await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+      } else {
+        await navigator.clipboard.writeText(content);
+      }
       toast.success(t('clipboard_section.success_copy'));
     } catch (err) {
       toast.error(t('clipboard_section.error_copy'));
     }
   };
+
+  const handlePaste = (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const { items } = event.clipboardData;
+    if (!items?.length) return;
+
+    const imageItem = Array.from(items).find((item) => item.type.startsWith('image/'));
+    if (!imageItem) return;
+
+    const file = imageItem.getAsFile();
+    if (!file) return;
+
+    event.preventDefault();
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : '';
+      if (result) setContent(result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const showImagePreview = isImageDataUrl(content);
+  const textareaValue = showImagePreview ? '' : content;
 
   return (
     <div className="bg-white shadow sm:rounded-lg transition-colors duration-200 dark:bg-gray-800 dark:ring-1 dark:ring-white/10">
@@ -64,11 +93,31 @@ export default function ClipboardSection({ refreshKey }: ClipboardSectionProps) 
           <textarea
             rows={4}
             className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 transition-colors duration-200 dark:bg-gray-700 dark:text-white dark:ring-gray-600 dark:placeholder:text-gray-500 dark:focus:ring-indigo-500"
-            value={content}
+            value={textareaValue}
             onChange={(e) => setContent(e.target.value)}
+            onPaste={handlePaste}
             placeholder={t('clipboard_section.textarea_placeholder')}
           />
         </div>
+        {showImagePreview && (
+          <div className="mt-4 rounded-md border border-gray-200 p-3 dark:border-gray-700">
+            <div className="text-xs text-gray-500 dark:text-gray-400">{t('clipboard_section.image_preview_label')}</div>
+            <img
+              src={content}
+              alt={t('clipboard_section.image_preview_alt')}
+              className="mt-2 max-h-64 w-full rounded-md object-contain"
+            />
+            <div className="mt-3 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setContent('')}
+                className="text-xs font-semibold text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+              >
+                {t('clipboard_section.clear_image_button')}
+              </button>
+            </div>
+          </div>
+        )}
         <div className="mt-3 flex items-center justify-end gap-x-6">
           <button
             type="button"

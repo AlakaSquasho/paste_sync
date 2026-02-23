@@ -13,8 +13,11 @@
   },
   "clipboard_section": {
     "title": "共享剪贴板",
-    "description": "在此处共享的文本可供网络上的所有设备访问。",
-    "textarea_placeholder": "在此处输入或粘贴文本...",
+    "description": "在此处共享的文本或图片可供网络上的所有设备访问。",
+    "textarea_placeholder": "在此处输入文本或从剪贴板粘贴图片...",
+    "image_preview_label": "剪贴板图片预览",
+    "image_preview_alt": "剪贴板图片预览",
+    "clear_image_button": "清除图片",
     "copy_to_device_button": "复制到本地设备",
     "update_cloud_clipboard_button": "更新云剪贴板",
     "saving_button": "保存中...",

@@ -49,6 +49,7 @@ You can customize the following environment variables in `docker-compose.yml`:
 
 - `SHARED_PASSWORD`: The password required for access. Supports plaintext or Bcrypt hash (recommended).
 - `JWT_SECRET`: Secret key for authentication tokens. **Please make sure to change this.**
+- `IPINFO_API_KEY`: API key for the IP geolocation service. When set, access logs include region details.
 
 ### Generate a Secure Password Hash
 

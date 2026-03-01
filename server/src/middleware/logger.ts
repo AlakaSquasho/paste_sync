@@ -92,13 +92,17 @@ const lookupLocation = async (
   const timeout = setTimeout(() => controller.abort(), 1500);
 
   try {
-    const response = await fetch(`${IPINFO_BASE_URL}?ip=${encodeURIComponent(ip)}`, {
-      headers: {
-        'X-API-Key': IPINFO_API_KEY,
-        Accept: 'application/json',
-      },
-      signal: controller.signal,
-    });
+    const response = await fetch(
+      `${IPINFO_BASE_URL}?key=${encodeURIComponent(IPINFO_API_KEY)}&ip=${encodeURIComponent(
+        ip
+      )}`,
+      {
+        headers: {
+          Accept: 'application/json',
+        },
+        signal: controller.signal,
+      }
+    );
 
     if (!response.ok) {
       cacheLocation(ip, null);

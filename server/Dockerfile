@@ -15,4 +15,4 @@ COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 3000
 # 启动时执行迁移并启动服务
-CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
+CMD ["sh", "-c", "mkdir -p /app/logs && npx prisma migrate deploy && npm start"]

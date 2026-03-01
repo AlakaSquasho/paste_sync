@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 
 // Resolve logs dir from runtime cwd (e.g. /app in Docker or /.../server locally)
-const logDirectory = process.env.LOG_DIR || path.resolve(process.cwd(), 'logs');
+const logDirectory = path.resolve(process.env.LOG_DIR || path.resolve(process.cwd(), 'logs'));
 const logFile = path.join(logDirectory, 'access.log');
 const IPINFO_API_KEY = process.env.IPINFO_API_KEY || '';
 const IPINFO_BASE_URL = 'https://ipinfo.dkly.net/api/';

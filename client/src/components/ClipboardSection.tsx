@@ -152,33 +152,33 @@ export default function ClipboardSection({ refreshKey }: ClipboardSectionProps) 
             </div>
           </div>
         )}
-        <div className="mt-3 flex items-center justify-end gap-x-6">
+        <div className="mt-4 grid grid-cols-1 gap-2 sm:mt-3 sm:flex sm:items-center sm:justify-end sm:gap-4">
           <button
             type="button"
             onClick={handlePasteFromClipboard}
-            className="text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white transition-colors"
+            className="w-full rounded-md border border-gray-200 px-3 py-2 text-center text-sm font-semibold text-gray-900 transition-colors hover:text-gray-700 dark:border-gray-700 dark:text-gray-300 dark:hover:text-white sm:w-auto sm:border-0 sm:px-0 sm:py-0 sm:text-left"
           >
             {t('clipboard_section.paste_from_clipboard_button')}
           </button>
           <button
             type="button"
-            onClick={handleClearClipboard}
-            className="text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white transition-colors disabled:opacity-50"
-          >
-            {t('clipboard_section.clear_clipboard_button')}
-          </button>
-          <button
-            type="button"
             onClick={handleCopy}
-            className="text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white transition-colors"
+            className="w-full rounded-md border border-gray-200 px-3 py-2 text-center text-sm font-semibold text-gray-900 transition-colors hover:text-gray-700 dark:border-gray-700 dark:text-gray-300 dark:hover:text-white sm:w-auto sm:border-0 sm:px-0 sm:py-0 sm:text-left"
           >
             {t('clipboard_section.copy_to_device_button')}
           </button>
           <button
             type="button"
+            onClick={handleClearClipboard}
+            className="w-full rounded-md border border-gray-200 px-3 py-2 text-center text-sm font-semibold text-gray-900 transition-colors hover:text-gray-700 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:text-white sm:w-auto sm:border-0 sm:px-0 sm:py-0 sm:text-left"
+          >
+            {t('clipboard_section.clear_clipboard_button')}
+          </button>
+          <button
+            type="button"
             onClick={handleUpdate}
             disabled={isLoading}
-            className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 transition-colors"
+            className="w-full rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 sm:w-auto"
           >
             {isLoading ? t('clipboard_section.saving_button') : t('clipboard_section.update_cloud_clipboard_button')}
           </button>

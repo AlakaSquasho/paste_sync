@@ -72,7 +72,7 @@ function Dashboard() {
                         activeTab === 'clipboard'
                           ? 'bg-accent text-ink'
                           : 'text-coal hover:text-ink dark:text-gray-300 dark:hover:text-white'
-                      } rounded-md px-4 py-1.5 text-sm font-semibold transition-colors`}
+                      } w-24 rounded-md px-3 py-1.5 text-center text-sm font-semibold whitespace-nowrap transition-colors`}
                     >
                       {t('dashboard.clipboard_tab')}
                     </button>
@@ -82,7 +82,7 @@ function Dashboard() {
                         activeTab === 'files'
                           ? 'bg-accent text-ink'
                           : 'text-coal hover:text-ink dark:text-gray-300 dark:hover:text-white'
-                      } rounded-md px-4 py-1.5 text-sm font-semibold transition-colors`}
+                      } w-24 rounded-md px-3 py-1.5 text-center text-sm font-semibold whitespace-nowrap transition-colors`}
                     >
                       {t('dashboard.files_tab')}
                     </button>

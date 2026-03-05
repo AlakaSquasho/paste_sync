@@ -11,3 +11,4 @@ server/logs/
 server/prisma/data/
 .DS_Store
 .codex
+.claude

@@ -93,7 +93,7 @@ function Dashboard() {
                 <select
                   onChange={(e) => changeLanguage(e.target.value)}
                   value={currentLanguage}
-                  className="cursor-pointer rounded-md border border-ink/10 bg-white/80 px-3 py-1.5 text-sm font-medium text-ink shadow-sm transition-colors focus:border-accent focus:ring-accent/30 dark:border-white/10 dark:bg-night/60 dark:text-white"
+                  className="cursor-pointer rounded-md border border-ink/10 bg-white/80 px-3 py-1.5 text-sm font-medium text-ink shadow-sm transition-colors focus:border-accent focus:ring-accent/30 dark:border-white/10 dark:bg-night/60 dark:text-white dark:[color-scheme:dark]"
                 >
                   <option value="en">English</option>
                   <option value="zh">中文</option>

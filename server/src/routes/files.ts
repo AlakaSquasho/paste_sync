@@ -1,5 +1,5 @@
 // server/src/routes/files.ts (Update to fix import path)
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { PrismaClient } from '@prisma/client';
 import { authenticate } from '../middleware/auth';
@@ -28,6 +28,34 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+const normalizeOriginalName = (originalName: string) => {
+  if (/[\u3400-\u9FFF]/.test(originalName)) {
+    return originalName;
+  }
+
+  const decoded = Buffer.from(originalName, 'latin1').toString('utf8');
+  if (/[\u3400-\u9FFF]/.test(decoded)) {
+    return decoded;
+  }
+
+  return originalName;
+};
+
+const getDisplayFileName = (file: Express.Multer.File) => normalizeOriginalName(file.originalname);
+
+const toAsciiFileName = (name: string) => name.replace(/[^\x20-\x7E]/g, '_');
+const escapeQuotedString = (value: string) => value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+const buildContentDisposition = (filename: string) => {
+  const asciiFallback = escapeQuotedString(toAsciiFileName(filename) || 'download');
+  const encoded = encodeURIComponent(filename);
+  return `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encoded}`;
+};
+
+const streamFileAsAttachment = (res: Response, filePath: string, filename: string) => {
+  res.setHeader('Content-Disposition', buildContentDisposition(filename));
+  res.sendFile(filePath);
+};
+
 // List all files
 router.get('/', authenticate, async (req: Request, res: Response) => {
   try {
@@ -41,7 +69,14 @@ router.get('/', authenticate, async (req: Request, res: Response) => {
 });
 
 // Upload a file
-router.post('/upload', authenticate, upload.single('file'), async (req: Request, res: Response) => {
+router.post('/upload', authenticate, (req: Request, res: Response, next: NextFunction) => {
+  upload.single('file')(req, res, (err: any) => {
+    if (err) {
+      return res.status(400).json({ error: err.message || 'Failed to parse uploaded file' });
+    }
+    next();
+  });
+}, async (req: Request, res: Response) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }
@@ -49,7 +84,7 @@ router.post('/upload', authenticate, upload.single('file'), async (req: Request,
   try {
     const newFile = await prisma.fileMetadata.create({
       data: {
-        originalName: req.file.originalname,
+        originalName: getDisplayFileName(req.file),
         filename: req.file.filename,
         mimetype: req.file.mimetype,
         size: req.file.size,
@@ -77,7 +112,7 @@ router.get('/:id', authenticate, async (req: Request, res: Response) => {
     }
 
     const filePath = path.join(UPLOADS_DIR, fileData.filename);
-    res.download(filePath, fileData.originalName);
+    streamFileAsAttachment(res, filePath, fileData.originalName);
   } catch (error) {
     res.status(500).json({ error: 'Failed to download file' });
   }

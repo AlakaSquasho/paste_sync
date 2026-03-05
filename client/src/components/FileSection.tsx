@@ -40,14 +40,13 @@ export default function FileSection({ refreshKey }: FileSectionProps) {
       for (const file of acceptedFiles) {
         const formData = new FormData();
         formData.append('file', file);
-        await api.post('/files/upload', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        await api.post('/files/upload', formData);
       }
       toast.success(t('file_section.success_upload'));
       fetchFiles();
     } catch (error) {
-      toast.error(t('file_section.error_upload'));
+      const errorMessage = (error as any)?.response?.data?.error || (error as Error)?.message || t('file_section.error_upload');
+      toast.error(errorMessage);
     } finally {
       setIsUploading(false);
     }

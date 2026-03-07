@@ -1,5 +1,5 @@
 // client/src/components/ClipboardSection.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import api from '../api';
 import { useTranslation } from 'react-i18next'; // 引入 useTranslation
@@ -10,10 +10,26 @@ interface ClipboardSectionProps {
 
 const isImageDataUrl = (value: string) => value.startsWith('data:image/');
 
+const detectIOSDevice = () => {
+  if (typeof navigator === 'undefined') return false;
+  const userAgent = navigator.userAgent || '';
+  return /iPad|iPhone|iPod/.test(userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+};
+
 export default function ClipboardSection({ refreshKey }: ClipboardSectionProps) {
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [textareaRenderKey, setTextareaRenderKey] = useState(0);
+  const lastContentRef = useRef('');
+  const isIOSDevice = useRef(detectIOSDevice());
   const { t } = useTranslation(); // 初始化 useTranslation
+
+  useEffect(() => {
+    if (isIOSDevice.current && lastContentRef.current && !content) {
+      setTextareaRenderKey((prev) => prev + 1);
+    }
+    lastContentRef.current = content;
+  }, [content]);
 
   useEffect(() => {
     fetchClipboard();
@@ -25,7 +41,8 @@ export default function ClipboardSection({ refreshKey }: ClipboardSectionProps) 
 
     try {
       const { data } = await api.get('/clipboard');
-      setContent(data.content);
+      const nextContent = typeof data?.content === 'string' ? data.content : '';
+      setContent(nextContent);
     } catch (error: any) {
       // 只有在不是 401/403 的情况下才报错，因为 401 会被拦截器处理跳转
       if (error.response?.status !== 401 && error.response?.status !== 403) {
@@ -126,8 +143,9 @@ export default function ClipboardSection({ refreshKey }: ClipboardSectionProps) 
         </div>
         <div className="mt-5">
           <textarea
+            key={textareaRenderKey}
             rows={4}
-            className="block w-full rounded-md border-0 bg-white/80 px-3 py-2 font-mono text-sm text-ink shadow-sm ring-1 ring-inset ring-ink/10 placeholder:text-coal/70 focus:ring-2 focus:ring-inset focus:ring-accent/50 transition-colors duration-200 dark:bg-night/60 dark:text-white dark:ring-white/10 dark:placeholder:text-gray-500"
+            className="block w-full rounded-md border-0 bg-white/80 px-3 py-2 text-sm text-ink shadow-sm ring-1 ring-inset ring-ink/10 placeholder:text-coal/70 focus:ring-2 focus:ring-inset focus:ring-accent/50 transition-colors duration-200 dark:bg-night/60 dark:text-white dark:ring-white/10 dark:placeholder:text-gray-500"
             value={textareaValue}
             onChange={(e) => setContent(e.target.value)}
             onPaste={handlePaste}

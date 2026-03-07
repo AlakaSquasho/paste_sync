@@ -2,6 +2,8 @@ import { IncomingMessage } from 'http';
 import jwt from 'jsonwebtoken';
 import { WebSocketServer, WebSocket } from 'ws';
 
+const HEARTBEAT_INTERVAL_MS = 30000;
+
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 type SyncEventType = 'clipboard_updated' | 'files_updated';
@@ -11,7 +13,10 @@ interface SyncEvent {
   timestamp: number;
 }
 
-const clients = new Set<WebSocket>();
+type TrackedWebSocket = WebSocket & { isAlive?: boolean };
+
+const clients = new Set<TrackedWebSocket>();
+let heartbeatTimer: NodeJS.Timeout | null = null;
 
 const parseToken = (req: IncomingMessage) => {
   const host = req.headers.host || 'localhost';
@@ -31,24 +36,49 @@ const isAuthorized = (req: IncomingMessage) => {
   }
 };
 
-const sendEvent = (ws: WebSocket, event: SyncEvent) => {
+const sendEvent = (ws: TrackedWebSocket, event: SyncEvent) => {
   if (ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(event));
   }
+};
+
+const startHeartbeat = () => {
+  if (heartbeatTimer) return;
+
+  heartbeatTimer = setInterval(() => {
+    clients.forEach((ws) => {
+      if (ws.isAlive === false) {
+        clients.delete(ws);
+        ws.terminate();
+        return;
+      }
+
+      ws.isAlive = false;
+      ws.ping();
+    });
+  }, HEARTBEAT_INTERVAL_MS);
 };
 
 let websocketServer: WebSocketServer | null = null;
 
 export const initWebSocketServer = (wss: WebSocketServer) => {
   websocketServer = wss;
+  startHeartbeat();
 
-  wss.on('connection', (ws, req) => {
+  wss.on('connection', (rawWs, req) => {
+    const ws = rawWs as TrackedWebSocket;
+
     if (!isAuthorized(req)) {
       ws.close(1008, 'Unauthorized');
       return;
     }
 
+    ws.isAlive = true;
     clients.add(ws);
+
+    ws.on('pong', () => {
+      ws.isAlive = true;
+    });
 
     ws.on('close', () => {
       clients.delete(ws);
@@ -57,6 +87,13 @@ export const initWebSocketServer = (wss: WebSocketServer) => {
     ws.on('error', () => {
       clients.delete(ws);
     });
+  });
+
+  wss.on('close', () => {
+    if (heartbeatTimer) {
+      clearInterval(heartbeatTimer);
+      heartbeatTimer = null;
+    }
   });
 };
 

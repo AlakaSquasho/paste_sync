@@ -4,7 +4,7 @@ import AuthGuard from './components/AuthGuard';
 import LoginPage from './components/LoginPage';
 import ClipboardSection from './components/ClipboardSection';
 import FileSection from './components/FileSection';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { connectWebSocket, disconnectWebSocket, subscribeSyncEvent } from './ws';
 import { useTheme, Theme } from './hooks/useTheme';
 import { SunIcon, MoonIcon, ComputerDesktopIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
@@ -18,6 +18,29 @@ function Dashboard() {
   const [filesRefreshKey, setFilesRefreshKey] = useState(0);
   const [clipboardForceRefreshKey, setClipboardForceRefreshKey] = useState(0);
   const [filesForceRefreshKey, setFilesForceRefreshKey] = useState(0);
+  const [isRefreshAnimating, setIsRefreshAnimating] = useState(false);
+  const refreshAnimationTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (refreshAnimationTimerRef.current !== null) {
+        window.clearTimeout(refreshAnimationTimerRef.current);
+      }
+    };
+  }, []);
+
+  const playRefreshAnimation = useCallback(() => {
+    setIsRefreshAnimating(true);
+
+    if (refreshAnimationTimerRef.current !== null) {
+      window.clearTimeout(refreshAnimationTimerRef.current);
+    }
+
+    refreshAnimationTimerRef.current = window.setTimeout(() => {
+      setIsRefreshAnimating(false);
+      refreshAnimationTimerRef.current = null;
+    }, 600);
+  }, []);
   const { t, i18n } = useTranslation(); // 初始化 useTranslation
   const currentLanguage = (i18n.resolvedLanguage || i18n.language || 'en').split('-')[0];
 
@@ -52,9 +75,10 @@ function Dashboard() {
   };
 
   const handleRefresh = useCallback(() => {
+    playRefreshAnimation();
     setClipboardForceRefreshKey((prevKey) => prevKey + 1);
     setFilesForceRefreshKey((prevKey) => prevKey + 1);
-  }, []);
+  }, [playRefreshAnimation]);
 
   // 添加语言切换功能
   const changeLanguage = (lng: string) => {
@@ -130,7 +154,7 @@ function Dashboard() {
                   className="cursor-pointer rounded-md border border-ink/10 p-2 text-ink transition-colors hover:bg-ink/5 dark:border-white/10 dark:text-gray-200 dark:hover:bg-white/10"
                   title={t('dashboard.refresh_button')}
                 >
-                  <ArrowPathIcon className="h-5 w-5" />
+                  <ArrowPathIcon className={`h-5 w-5 ${isRefreshAnimating ? 'animate-spin' : ''}`} />
                 </button>
                 <button
                   onClick={() => setTheme(nextTheme[theme])}

@@ -51,8 +51,17 @@ export const connectWebSocket = () => {
   socket = new WebSocket(getWebSocketUrl());
 
   socket.onmessage = handleMessage;
-  socket.onclose = () => {
+  socket.onclose = (event) => {
     socket = null;
+
+    if (event.code === 1008) {
+      localStorage.removeItem('token');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+      return;
+    }
+
     scheduleReconnect();
   };
   socket.onerror = () => {

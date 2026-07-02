@@ -52,6 +52,8 @@
 3. 确保 Docker 映射端口与 `docker-compose.yml` 保持一致（默认 `8080:80`）。
 4. 重载 Nginx 配置。
 
+如果你启用了文件上传大小限制，请确保外层 Nginx 的 `client_max_body_size` 与应用的 `MAX_UPLOAD_SIZE_MB` 保持一致。例如当 `MAX_UPLOAD_SIZE_MB=200` 时，这里应为 `client_max_body_size 200M;`。
+
 ## 安全特性
 
 为保障公网部署的安全性，本项目已集成以下防护措施：
@@ -68,6 +70,7 @@
 - `SHARED_PASSWORD`：访问所需的密码。支持明文或 Bcrypt 哈希值（推荐）。
 - `JWT_SECRET`：用于身份验证 Token 的密钥。请务必修改。
 - `IPINFO_API_KEY`：用于访问 IP 归属地服务的 API Key。配置后访问日志会记录具体区域。
+- `MAX_UPLOAD_SIZE_MB`：文件上传大小上限（单位 MB）。需要与 Nginx 的 `client_max_body_size` 保持一致。
 
 ### 生成安全密码哈希
 

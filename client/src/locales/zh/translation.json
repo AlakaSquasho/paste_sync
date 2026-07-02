@@ -52,6 +52,7 @@
     "confirm_delete": "您确定要删除此文件吗？",
     "success_upload": "文件上传成功",
     "error_upload": "文件上传失败",
+    "error_file_too_large": "文件 {{fileName}} 超过 {{maxSize}} 限制，无法上传",
     "success_download": "开始下载",
     "error_download": "下载失败",
     "success_delete": "文件已删除",

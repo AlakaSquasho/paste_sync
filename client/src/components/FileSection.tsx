@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, Fragment } from 'react';
-import { useDropzone } from 'react-dropzone';
+import { useDropzone, FileRejection } from 'react-dropzone';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import api from '../api';
@@ -17,9 +17,20 @@ interface FileSectionProps {
   refreshKey: number;
 }
 
+interface FileUploadConfig {
+  maxUploadSizeMb: number;
+  maxUploadSizeBytes: number;
+}
+
+const DEFAULT_FILE_UPLOAD_CONFIG: FileUploadConfig = {
+  maxUploadSizeMb: 200,
+  maxUploadSizeBytes: 200 * 1024 * 1024,
+};
+
 export default function FileSection({ refreshKey }: FileSectionProps) {
   const [files, setFiles] = useState<FileMetadata[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadConfig, setUploadConfig] = useState<FileUploadConfig>(DEFAULT_FILE_UPLOAD_CONFIG);
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
   const [previewLoading, setPreviewLoading] = useState<Record<string, boolean>>({});
   const { t } = useTranslation(); // 初始化 useTranslation
@@ -90,7 +101,22 @@ export default function FileSection({ refreshKey }: FileSectionProps) {
     }
   };
 
+  const fetchUploadConfig = useCallback(async () => {
+    try {
+      const { data } = await api.get<FileUploadConfig>('/files/config');
+      setUploadConfig(data);
+    } catch {
+      setUploadConfig(DEFAULT_FILE_UPLOAD_CONFIG);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUploadConfig();
+  }, [fetchUploadConfig]);
+
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    if (acceptedFiles.length === 0) return;
+
     setIsUploading(true);
     try {
       for (const file of acceptedFiles) {
@@ -108,7 +134,29 @@ export default function FileSection({ refreshKey }: FileSectionProps) {
     }
   }, [t]); // Add t to dependency array for useCallback
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
+  const onDropRejected = useCallback((fileRejections: FileRejection[]) => {
+    const oversizedFile = fileRejections.find(({ errors }) =>
+      errors.some((error) => error.code === 'file-too-large')
+    );
+
+    if (oversizedFile) {
+      toast.error(
+        t('file_section.error_file_too_large', {
+          fileName: oversizedFile.file.name,
+          maxSize: `${uploadConfig.maxUploadSizeMb}MB`,
+        })
+      );
+      return;
+    }
+
+    toast.error(t('file_section.error_upload'));
+  }, [t, uploadConfig.maxUploadSizeMb]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    onDropRejected,
+    maxSize: uploadConfig.maxUploadSizeBytes,
+  });
 
   const handleDownload = async (file: FileMetadata) => {
     try {

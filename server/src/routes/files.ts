@@ -9,6 +9,12 @@ import { broadcastSyncEvent } from '../ws';
 
 const router = Router();
 const prisma = new PrismaClient();
+const DEFAULT_MAX_UPLOAD_SIZE_MB = 200;
+const parsedMaxUploadSizeMb = Number(process.env.MAX_UPLOAD_SIZE_MB);
+const MAX_UPLOAD_SIZE_MB = Number.isFinite(parsedMaxUploadSizeMb) && parsedMaxUploadSizeMb > 0
+  ? parsedMaxUploadSizeMb
+  : DEFAULT_MAX_UPLOAD_SIZE_MB;
+const MAX_UPLOAD_SIZE_BYTES = Math.floor(MAX_UPLOAD_SIZE_MB * 1024 * 1024);
 
 // Ensure uploads directory exists
 const UPLOADS_DIR = path.join(__dirname, '../../uploads');
@@ -27,7 +33,12 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: MAX_UPLOAD_SIZE_BYTES,
+  },
+});
 
 const normalizeOriginalName = (originalName: string) => {
   if (/[\u3400-\u9FFF]/.test(originalName)) {
@@ -58,6 +69,13 @@ const streamFileAsAttachment = (res: Response, filePath: string, filename: strin
 };
 
 // List all files
+router.get('/config', authenticate, (_req: Request, res: Response) => {
+  res.json({
+    maxUploadSizeMb: MAX_UPLOAD_SIZE_MB,
+    maxUploadSizeBytes: MAX_UPLOAD_SIZE_BYTES,
+  });
+});
+
 router.get('/', authenticate, async (req: Request, res: Response) => {
   try {
     const files = await prisma.fileMetadata.findMany({
@@ -73,6 +91,9 @@ router.get('/', authenticate, async (req: Request, res: Response) => {
 router.post('/upload', authenticate, (req: Request, res: Response, next: NextFunction) => {
   upload.single('file')(req, res, (err: any) => {
     if (err) {
+      if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ error: `File exceeds the ${MAX_UPLOAD_SIZE_MB}MB limit` });
+      }
       return res.status(400).json({ error: err.message || 'Failed to parse uploaded file' });
     }
     next();

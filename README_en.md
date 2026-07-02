@@ -52,6 +52,8 @@ How to use:
 3. Ensure Docker port mapping matches `docker-compose.yml` (default `8080:80`).
 4. Reload Nginx.
 
+If you enable a file upload size limit, keep the outer Nginx `client_max_body_size` aligned with the app's `MAX_UPLOAD_SIZE_MB`. For example, when `MAX_UPLOAD_SIZE_MB=200`, this should be `client_max_body_size 200M;`.
+
 ## Security Features
 
 For secure deployment on the public internet, the following protections are integrated:
@@ -68,6 +70,7 @@ You can customize the following environment variables in `docker-compose.yml`:
 - `SHARED_PASSWORD`: The password required for access. Supports plaintext or Bcrypt hash (recommended).
 - `JWT_SECRET`: Secret key for authentication tokens. **Please make sure to change this.**
 - `IPINFO_API_KEY`: API key for the IP geolocation service. When set, access logs include region details.
+- `MAX_UPLOAD_SIZE_MB`: File upload size limit in MB. Keep this value aligned with Nginx `client_max_body_size`.
 
 ### Generate a Secure Password Hash
 

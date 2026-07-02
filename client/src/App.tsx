@@ -3,7 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import AuthGuard from './components/AuthGuard';
 import LoginPage from './components/LoginPage';
 import ClipboardSection from './components/ClipboardSection';
-import FileSection from './components/FileSection';
+import FileSection, { FileTransferSummary } from './components/FileSection';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { connectWebSocket, disconnectWebSocket, subscribeSyncEvent } from './ws';
 import { useTheme, Theme } from './hooks/useTheme';
@@ -19,6 +19,7 @@ function Dashboard() {
   const [clipboardForceRefreshKey, setClipboardForceRefreshKey] = useState(0);
   const [filesForceRefreshKey, setFilesForceRefreshKey] = useState(0);
   const [isRefreshAnimating, setIsRefreshAnimating] = useState(false);
+  const [fileTransferSummary, setFileTransferSummary] = useState<FileTransferSummary | null>(null);
   const refreshAnimationTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -140,6 +141,21 @@ function Dashboard() {
                 </div>
               </div>
               <div className="ml-auto flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+                {fileTransferSummary && (
+                  <div className="min-w-40 rounded-lg border border-ink/10 bg-white/80 px-3 py-2 text-xs shadow-sm dark:border-white/10 dark:bg-night/60">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-ink dark:text-white">{t('dashboard.transfer_in_progress')}</span>
+                      <span className="font-semibold text-accent">{fileTransferSummary.percent}%</span>
+                    </div>
+                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-ink/10 dark:bg-white/10">
+                      <div className="h-full rounded-full bg-accent transition-all duration-200" style={{ width: `${fileTransferSummary.percent}%` }} />
+                    </div>
+                    <div className="mt-1 text-[11px] text-coal dark:text-gray-400">
+                      {t('dashboard.transfer_count', { count: fileTransferSummary.activeCount })}
+                    </div>
+                  </div>
+                )}
+
                 <select
                   onChange={(e) => changeLanguage(e.target.value)}
                   value={currentLanguage}
@@ -207,7 +223,10 @@ function Dashboard() {
               {activeTab === 'clipboard' ? (
                 <ClipboardSection refreshKey={clipboardRefreshKey} forceRefreshKey={clipboardForceRefreshKey} />
               ) : (
-                <FileSection refreshKey={filesRefreshKey + filesForceRefreshKey} />
+                <FileSection
+                  refreshKey={filesRefreshKey + filesForceRefreshKey}
+                  onTransferSummaryChange={setFileTransferSummary}
+                />
               )}
             </div>
           </main>

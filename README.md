@@ -1,8 +1,39 @@
 # Paste Sync
 
-A web-based LAN sharing tool for syncing text, clipboard images, and files across devices.
+A password-gated clipboard and file sharing app for quickly syncing text, clipboard images, and files across your own devices on a LAN or through a public reverse proxy.
 
 [中文说明](./README_zh.md)
+
+## Screenshots
+
+### Clipboard
+
+![Clipboard screenshot](./clipboard-screenshot-en.png)
+
+### Files
+
+![Files screenshot](./files-screenshot-en.png)
+
+## Architecture
+
+```mermaid
+flowchart LR
+    Browser[Browser / SPA] --> Nginx[Nginx / Reverse Proxy]
+    Nginx -->|/| Client[Client Static Assets]
+    Nginx -->|/api| Server[Express API Server]
+    Nginx -->|/ws| WS[WebSocket Server]
+
+    Server --> Prisma[Prisma]
+    Prisma --> SQLite[(SQLite)]
+    Server --> Uploads[Disk Uploads]
+    Server --> Logs[Access Logs]
+    WS --> Browser
+
+    subgraph Node Backend
+        Server
+        WS
+    end
+```
 
 ## Features
 
@@ -31,9 +62,21 @@ npm install
 
 ### Run with Docker
 
+You can deploy with prebuilt images or build locally from source.
+
+Use prebuilt images:
+
+```bash
+docker-compose -f docker-compose.image.yml up -d
+```
+
+Build locally:
+
 ```bash
 docker-compose up -d --build
 ```
+
+Keeping two Compose files is recommended: `docker-compose.yml` for local builds and `docker-compose.image.yml` for prebuilt images. Both can share the same ports, volumes, and environment variables; only `build` changes to `image`.
 
 Access:
 - Frontend: http://localhost:8080
@@ -71,7 +114,7 @@ npm run start
 - Logs: `server/logs/`
 - Docker persists database, uploads, and logs via mounted volumes
 
-A public reverse-proxy template is included: `nginx.reverse-proxy.template.conf`
+A public reverse-proxy template is included: `nginx.reverse-proxy.template.conf`. This lets you expose the app through your own domain or HTTPS gateway, so it can be used beyond the local network when the proxy is configured securely.
 
 - `/` → `127.0.0.1:8080`
 - `/api`, `/ws` → `127.0.0.1:3000`

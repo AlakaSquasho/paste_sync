@@ -12,3 +12,4 @@ server/prisma/data/
 .DS_Store
 .codex
 .claude
+CLAUDE.md

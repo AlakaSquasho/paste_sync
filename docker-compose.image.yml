@@ -1,0 +1,26 @@
+services:
+  server:
+    image: ghcr.io/alakasquasho/paste_sync-server:main
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./server/prisma/data:/app/prisma/data
+      - ./server/uploads:/app/uploads
+      - ./server/logs:/app/logs
+    environment:
+      - PORT=3000
+      - DATABASE_URL=file:./data/prod.db
+      - JWT_SECRET=${JWT_SECRET:-your_secret_key_here}
+      - SHARED_PASSWORD=${SHARED_PASSWORD:-123456}
+      - LOG_DIR=/app/logs
+      - IPINFO_API_KEY=${IPINFO_API_KEY:-}
+      - MAX_UPLOAD_SIZE_MB=${MAX_UPLOAD_SIZE_MB:-200}
+
+  client:
+    image: ghcr.io/alakasquasho/paste_sync-client:main
+    ports:
+      - "8080:80"
+    depends_on:
+      - server
+    environment:
+      - MAX_UPLOAD_SIZE_MB=${MAX_UPLOAD_SIZE_MB:-200}

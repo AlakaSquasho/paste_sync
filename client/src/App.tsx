@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next'; // 引入 useTranslation
 function Dashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'clipboard' | 'files'>('clipboard');
+  const [username] = useState(() => localStorage.getItem('username') || '');
   const { theme, setTheme } = useTheme();
   const [clipboardRefreshKey, setClipboardRefreshKey] = useState(0);
   const [filesRefreshKey, setFilesRefreshKey] = useState(0);
@@ -71,7 +72,9 @@ function Dashboard() {
   }, [currentLanguage]);
 
   const handleLogout = () => {
+    disconnectWebSocket();
     localStorage.removeItem('token');
+    localStorage.removeItem('username');
     navigate('/login');
   };
 
@@ -179,6 +182,14 @@ function Dashboard() {
                 >
                   {themeIcons[theme]}
                 </button>
+                {username && (
+                  <span
+                    className="max-w-40 truncate rounded-md border border-ink/10 bg-white/80 px-3 py-1.5 text-xs font-semibold text-ink shadow-sm dark:border-white/10 dark:bg-night/60 dark:text-white sm:text-sm"
+                    title={t('dashboard.signed_in_as', { username })}
+                  >
+                    {username}
+                  </span>
+                )}
                 <button
                   onClick={handleLogout}
                   className="cursor-pointer rounded-md border border-ink/10 bg-white/80 px-3 py-1.5 text-xs font-semibold text-ink shadow-sm transition-colors hover:bg-ink/5 dark:border-white/10 dark:bg-night/60 dark:text-white dark:hover:bg-white/10 sm:px-4 sm:py-2 sm:text-sm"

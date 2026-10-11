@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next'; // 引入 useTranslation
 
 export default function LoginPage() {
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -16,8 +17,9 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const { data } = await axios.post('/api/auth/login', { password });
+      const { data } = await axios.post('/api/auth/login', { username, password });
       localStorage.setItem('token', data.token);
+      localStorage.setItem('username', data.username ?? username);
       toast.success(t('login_page.success_login'));
       navigate('/');
     } catch (error: any) {
@@ -46,6 +48,26 @@ export default function LoginPage() {
           </div>
 
           <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-coal dark:text-gray-300">
+                {t('login_page.username_placeholder')}
+              </label>
+              <div className="mt-2">
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  autoComplete="username"
+                  autoFocus
+                  required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="block w-full rounded-md border-0 bg-white/80 px-3 py-2 text-ink shadow-sm ring-1 ring-inset ring-ink/10 placeholder:text-coal/60 focus:ring-2 focus:ring-inset focus:ring-accent/50 transition-colors duration-200 dark:bg-night/60 dark:text-white dark:ring-white/10 dark:placeholder:text-gray-500"
+                  placeholder={t('login_page.username_placeholder')}
+                />
+              </div>
+            </div>
+
             <div>
               <label htmlFor="password" university-data-label="password" className="block text-sm font-medium text-coal dark:text-gray-300">
                 {t('login_page.password_placeholder')}

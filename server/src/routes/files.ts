@@ -1,14 +1,14 @@
-// server/src/routes/files.ts (Update to fix import path)
+// server/src/routes/files.ts
 import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../prisma';
 import { authenticate } from '../middleware/auth';
 import path from 'path';
 import fs from 'fs';
 import { broadcastSyncEvent } from '../ws';
+import { UPLOADS_DIR, ensureDir, userUploadsDir } from '../storage/paths';
 
 const router = Router();
-const prisma = new PrismaClient();
 const DEFAULT_MAX_UPLOAD_SIZE_MB = 200;
 const parsedMaxUploadSizeMb = Number(process.env.MAX_UPLOAD_SIZE_MB);
 const MAX_UPLOAD_SIZE_MB = Number.isFinite(parsedMaxUploadSizeMb) && parsedMaxUploadSizeMb > 0
@@ -17,15 +17,18 @@ const MAX_UPLOAD_SIZE_MB = Number.isFinite(parsedMaxUploadSizeMb) && parsedMaxUp
 const MAX_UPLOAD_SIZE_BYTES = Math.floor(MAX_UPLOAD_SIZE_MB * 1024 * 1024);
 
 // Ensure uploads directory exists
-const UPLOADS_DIR = path.join(__dirname, '../../uploads');
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-}
+ensureDir(UPLOADS_DIR);
 
 // Multer storage configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, UPLOADS_DIR);
+    const dir = userUploadsDir(req.userId);
+    try {
+      ensureDir(dir);
+      cb(null, dir);
+    } catch (error: any) {
+      cb(error, dir);
+    }
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -79,6 +82,7 @@ router.get('/config', authenticate, (_req: Request, res: Response) => {
 router.get('/', authenticate, async (req: Request, res: Response) => {
   try {
     const files = await prisma.fileMetadata.findMany({
+      where: { userId: req.userId },
       orderBy: { createdAt: 'desc' },
     });
     res.json(files);
@@ -110,9 +114,10 @@ router.post('/upload', authenticate, (req: Request, res: Response, next: NextFun
         filename: req.file.filename,
         mimetype: req.file.mimetype,
         size: req.file.size,
+        userId: req.userId,
       },
     });
-    broadcastSyncEvent('files_updated');
+    broadcastSyncEvent(req.userId, 'files_updated');
     res.json(newFile);
   } catch (error) {
     // Clean up file on error
@@ -124,17 +129,19 @@ router.post('/upload', authenticate, (req: Request, res: Response, next: NextFun
 // Download a file
 router.get('/:id', authenticate, async (req: Request, res: Response) => {
   const { id } = req.params;
+  const userId = req.userId;
 
   try {
-    const fileData = await prisma.fileMetadata.findUnique({
-      where: { id },
+    // Scoped by owner: another account's file id simply resolves to nothing.
+    const fileData = await prisma.fileMetadata.findFirst({
+      where: { id, userId },
     });
 
     if (!fileData) {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    const filePath = path.join(UPLOADS_DIR, fileData.filename);
+    const filePath = path.join(userUploadsDir(userId), fileData.filename);
     streamFileAsAttachment(res, filePath, fileData.originalName);
   } catch (error) {
     res.status(500).json({ error: 'Failed to download file' });
@@ -144,10 +151,11 @@ router.get('/:id', authenticate, async (req: Request, res: Response) => {
 // Delete a file
 router.delete('/:id', authenticate, async (req: Request, res: Response) => {
   const { id } = req.params;
+  const userId = req.userId;
 
   try {
-    const fileData = await prisma.fileMetadata.findUnique({
-      where: { id },
+    const fileData = await prisma.fileMetadata.findFirst({
+      where: { id, userId },
     });
 
     if (!fileData) {
@@ -158,12 +166,12 @@ router.delete('/:id', authenticate, async (req: Request, res: Response) => {
     await prisma.fileMetadata.delete({ where: { id } });
 
     // Delete from disk
-    const filePath = path.join(UPLOADS_DIR, fileData.filename);
+    const filePath = path.join(userUploadsDir(userId), fileData.filename);
     fs.unlink(filePath, (err) => {
       if (err) console.error('Failed to delete file from disk:', err);
     });
 
-    broadcastSyncEvent('files_updated');
+    broadcastSyncEvent(userId, 'files_updated');
     res.json({ message: 'File deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete file' });

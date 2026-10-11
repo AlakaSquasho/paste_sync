@@ -1,12 +1,10 @@
-// server/src/routes/auth.ts
 import { Router, Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
+import { authenticate } from '../middleware/auth';
+import { verifyCredentials } from '../auth/accounts';
+import { signToken } from '../auth/jwt';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'secret';
-const SHARED_PASSWORD = process.env.SHARED_PASSWORD || '123456';
 
 // Rate limiter for login: 5 attempts per 15 minutes per IP
 const loginLimiter = rateLimit({
@@ -18,31 +16,26 @@ const loginLimiter = rateLimit({
 });
 
 router.post('/login', loginLimiter, async (req: Request, res: Response) => {
-  const { password } = req.body;
+  const { username, password } = req.body ?? {};
 
-  if (!password) {
-    return res.status(400).json({ message: 'Password is required' });
+  if (typeof username !== 'string' || !username || typeof password !== 'string' || !password) {
+    return res.status(400).json({ message: 'Username and password are required' });
   }
 
   // Artificial delay to prevent timing attacks and slow down brute force
-  await new Promise(resolve => setTimeout(resolve, 500));
+  await new Promise((resolve) => setTimeout(resolve, 500));
 
-  let isValid = false;
-
-  // Try bcrypt first if the shared password looks like a hash
-  if (SHARED_PASSWORD.startsWith('$2a$') || SHARED_PASSWORD.startsWith('$2b$')) {
-    isValid = await bcrypt.compare(password, SHARED_PASSWORD);
-  } else {
-    isValid = password === SHARED_PASSWORD;
+  const account = await verifyCredentials(username, password);
+  if (!account) {
+    // Same message whether the account is unknown or the password is wrong.
+    return res.status(401).json({ message: 'Invalid username or password' });
   }
 
-  if (!isValid) {
-    return res.status(401).json({ message: 'Invalid password' });
-  }
+  return res.json({ token: signToken(account.username), username: account.username });
+});
 
-  const token = jwt.sign({ role: 'user' }, JWT_SECRET, { expiresIn: '7d' });
-
-  return res.json({ token });
+router.get('/me', authenticate, (req: Request, res: Response) => {
+  return res.json({ username: req.userId });
 });
 
 export default router;

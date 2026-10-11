@@ -56,6 +56,7 @@ export const connectWebSocket = () => {
 
     if (event.code === 1008) {
       localStorage.removeItem('token');
+      localStorage.removeItem('username');
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }

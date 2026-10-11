@@ -1,22 +1,23 @@
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../prisma';
 import { authenticate } from '../middleware/auth';
 import path from 'path';
 import fs from 'fs';
 import { broadcastSyncEvent } from '../ws';
+import { ensureDir, userClipboardDir } from '../storage/paths';
 
 const router = Router();
-const prisma = new PrismaClient();
-
-const CLIPBOARD_IMAGE_DIR = path.join(__dirname, '../../uploads/clipboard');
-if (!fs.existsSync(CLIPBOARD_IMAGE_DIR)) {
-  fs.mkdirSync(CLIPBOARD_IMAGE_DIR, { recursive: true });
-}
 
 const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, CLIPBOARD_IMAGE_DIR);
+  destination: (req, _file, cb) => {
+    const dir = userClipboardDir(req.userId);
+    try {
+      ensureDir(dir);
+      cb(null, dir);
+    } catch (error: any) {
+      cb(error, dir);
+    }
   },
   filename: (_req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -26,24 +27,26 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-const deleteImageFromDisk = (filename: string) => {
-  const filePath = path.join(CLIPBOARD_IMAGE_DIR, filename);
+const deleteImageFromDisk = (userId: string, filename: string) => {
+  const filePath = path.join(userClipboardDir(userId), filename);
   fs.unlink(filePath, (err) => {
     if (err) console.error('Failed to delete clipboard image from disk:', err);
   });
 };
 
-// PUT /api/clipboard/image - upload new image, replacing any existing one
+// PUT /api/clipboard/image - upload new image, replacing any existing one for this account
 router.put('/', authenticate, upload.single('file'), async (req: Request, res: Response) => {
+  const userId = req.userId;
+
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }
 
   try {
-    // Delete existing clipboard image if any
-    const existing = await prisma.clipboardImage.findFirst();
+    // Delete this account's existing clipboard image if any
+    const existing = await prisma.clipboardImage.findFirst({ where: { userId } });
     if (existing) {
-      deleteImageFromDisk(existing.filename);
+      deleteImageFromDisk(userId, existing.filename);
       await prisma.clipboardImage.delete({ where: { id: existing.id } });
     }
 
@@ -53,10 +56,11 @@ router.put('/', authenticate, upload.single('file'), async (req: Request, res: R
         originalName: req.file.originalname,
         mimetype: req.file.mimetype,
         size: req.file.size,
+        userId,
       },
     });
 
-    broadcastSyncEvent('clipboard_updated');
+    broadcastSyncEvent(userId, 'clipboard_updated');
     return res.json({
       id: newRecord.id,
       mimetype: newRecord.mimetype,
@@ -65,20 +69,22 @@ router.put('/', authenticate, upload.single('file'), async (req: Request, res: R
     });
   } catch (error) {
     // Clean up uploaded file if DB write failed
-    deleteImageFromDisk(req.file.filename);
+    deleteImageFromDisk(userId, req.file.filename);
     return res.status(500).json({ error: 'Failed to save clipboard image' });
   }
 });
 
-// GET /api/clipboard/image - retrieve current clipboard image blob
-router.get('/', authenticate, async (_req: Request, res: Response) => {
+// GET /api/clipboard/image - retrieve this account's current clipboard image blob
+router.get('/', authenticate, async (req: Request, res: Response) => {
+  const userId = req.userId;
+
   try {
-    const record = await prisma.clipboardImage.findFirst();
+    const record = await prisma.clipboardImage.findFirst({ where: { userId } });
     if (!record) {
       return res.status(404).json({ error: 'No clipboard image' });
     }
 
-    const filePath = path.join(CLIPBOARD_IMAGE_DIR, record.filename);
+    const filePath = path.join(userClipboardDir(userId), record.filename);
     res.setHeader('Content-Type', record.mimetype);
     return res.sendFile(filePath);
   } catch (error) {
@@ -86,18 +92,20 @@ router.get('/', authenticate, async (_req: Request, res: Response) => {
   }
 });
 
-// DELETE /api/clipboard/image - delete current clipboard image
-router.delete('/', authenticate, async (_req: Request, res: Response) => {
+// DELETE /api/clipboard/image - delete this account's current clipboard image
+router.delete('/', authenticate, async (req: Request, res: Response) => {
+  const userId = req.userId;
+
   try {
-    const record = await prisma.clipboardImage.findFirst();
+    const record = await prisma.clipboardImage.findFirst({ where: { userId } });
     if (!record) {
       return res.status(404).json({ error: 'No clipboard image' });
     }
 
-    deleteImageFromDisk(record.filename);
+    deleteImageFromDisk(userId, record.filename);
     await prisma.clipboardImage.delete({ where: { id: record.id } });
 
-    broadcastSyncEvent('clipboard_updated');
+    broadcastSyncEvent(userId, 'clipboard_updated');
     return res.json({ message: 'Clipboard image deleted' });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to delete clipboard image' });

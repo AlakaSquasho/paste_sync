@@ -1,10 +1,9 @@
 import { IncomingMessage } from 'http';
-import jwt from 'jsonwebtoken';
 import { WebSocketServer, WebSocket } from 'ws';
+import { resolveAccount } from './auth/accounts';
+import { verifyToken } from './auth/jwt';
 
 const HEARTBEAT_INTERVAL_MS = 30000;
-
-const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 type SyncEventType = 'clipboard_updated' | 'files_updated';
 
@@ -13,9 +12,10 @@ interface SyncEvent {
   timestamp: number;
 }
 
-type TrackedWebSocket = WebSocket & { isAlive?: boolean };
+type TrackedWebSocket = WebSocket & { isAlive?: boolean; userId?: string };
 
-const clients = new Set<TrackedWebSocket>();
+// Sockets grouped by owning account, so a change only notifies that account's clients.
+const clientsByUser = new Map<string, Set<TrackedWebSocket>>();
 let heartbeatTimer: NodeJS.Timeout | null = null;
 
 const parseToken = (req: IncomingMessage) => {
@@ -24,16 +24,18 @@ const parseToken = (req: IncomingMessage) => {
   return url.searchParams.get('token');
 };
 
-const isAuthorized = (req: IncomingMessage) => {
+/** Returns the account that owns this socket handshake, or null if unauthorized. */
+const authenticateSocket = (req: IncomingMessage): string | null => {
   const token = parseToken(req);
-  if (!token) return false;
+  if (!token) return null;
 
-  try {
-    jwt.verify(token, JWT_SECRET);
-    return true;
-  } catch {
-    return false;
-  }
+  const payload = verifyToken(token);
+  if (!payload) return null;
+
+  // Reject sockets belonging to an account that has since been removed from USERS.
+  if (!resolveAccount(payload.sub)) return null;
+
+  return payload.sub;
 };
 
 const sendEvent = (ws: TrackedWebSocket, event: SyncEvent) => {
@@ -42,13 +44,32 @@ const sendEvent = (ws: TrackedWebSocket, event: SyncEvent) => {
   }
 };
 
+const allClients = (): TrackedWebSocket[] => {
+  const sockets: TrackedWebSocket[] = [];
+  clientsByUser.forEach((group) => group.forEach((ws) => sockets.push(ws)));
+  return sockets;
+};
+
+const removeClient = (ws: TrackedWebSocket) => {
+  const userId = ws.userId;
+  if (!userId) return;
+
+  const group = clientsByUser.get(userId);
+  if (!group) return;
+
+  group.delete(ws);
+  if (group.size === 0) {
+    clientsByUser.delete(userId);
+  }
+};
+
 const startHeartbeat = () => {
   if (heartbeatTimer) return;
 
   heartbeatTimer = setInterval(() => {
-    clients.forEach((ws) => {
+    allClients().forEach((ws) => {
       if (ws.isAlive === false) {
-        clients.delete(ws);
+        removeClient(ws);
         ws.terminate();
         return;
       }
@@ -68,24 +89,32 @@ export const initWebSocketServer = (wss: WebSocketServer) => {
   wss.on('connection', (rawWs, req) => {
     const ws = rawWs as TrackedWebSocket;
 
-    if (!isAuthorized(req)) {
+    const userId = authenticateSocket(req);
+    if (!userId) {
       ws.close(1008, 'Unauthorized');
       return;
     }
 
     ws.isAlive = true;
-    clients.add(ws);
+    ws.userId = userId;
+
+    let group = clientsByUser.get(userId);
+    if (!group) {
+      group = new Set<TrackedWebSocket>();
+      clientsByUser.set(userId, group);
+    }
+    group.add(ws);
 
     ws.on('pong', () => {
       ws.isAlive = true;
     });
 
     ws.on('close', () => {
-      clients.delete(ws);
+      removeClient(ws);
     });
 
     ws.on('error', () => {
-      clients.delete(ws);
+      removeClient(ws);
     });
   });
 
@@ -97,13 +126,17 @@ export const initWebSocketServer = (wss: WebSocketServer) => {
   });
 };
 
-export const broadcastSyncEvent = (type: SyncEventType) => {
+/** Delivers an event only to the sockets owned by the given account. */
+export const broadcastSyncEvent = (userId: string, type: SyncEventType) => {
   if (!websocketServer) return;
+
+  const group = clientsByUser.get(userId);
+  if (!group) return;
 
   const event: SyncEvent = {
     type,
     timestamp: Date.now(),
   };
 
-  clients.forEach((ws) => sendEvent(ws, event));
+  group.forEach((ws) => sendEvent(ws, event));
 };

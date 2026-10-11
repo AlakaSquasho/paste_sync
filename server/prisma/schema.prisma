@@ -12,7 +12,10 @@ datasource db {
 model Clipboard {
   id        String   @id @default(cuid())
   content   String   // The text content
+  userId    String   // Owning account (username)
   createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model ClipboardImage {
@@ -21,14 +24,20 @@ model ClipboardImage {
   originalName String
   mimetype     String
   size         Int
+  userId       String   // Owning account (username)
   createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model FileMetadata {
-  id          String   @id @default(cuid())
+  id           String   @id @default(cuid())
   originalName String
-  filename    String   // Generated unique name on disk
-  mimetype    String
-  size        Int
-  createdAt   DateTime @default(now())
+  filename     String   // Generated unique name on disk
+  mimetype     String
+  size         Int
+  userId       String   // Owning account (username)
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt])
 }

@@ -1,10 +1,9 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../prisma';
 import { authenticate } from '../middleware/auth';
 import { broadcastSyncEvent } from '../ws';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 interface ClipboardTextPayload {
   version: 2;
@@ -37,11 +36,12 @@ const parseStoredClipboardPayload = (content: string): ClipboardTextPayload | nu
   }
 };
 
-router.get('/', authenticate, async (_req: Request, res: Response) => {
+router.get('/', authenticate, async (req: Request, res: Response) => {
   try {
+    const userId = req.userId;
     const [latest, clipboardImage] = await Promise.all([
-      prisma.clipboard.findFirst({ orderBy: { createdAt: 'desc' } }),
-      prisma.clipboardImage.findFirst(),
+      prisma.clipboard.findFirst({ where: { userId }, orderBy: { createdAt: 'desc' } }),
+      prisma.clipboardImage.findFirst({ where: { userId } }),
     ]);
 
     if (!latest) {
@@ -82,11 +82,11 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
 
   try {
     const newEntry = await prisma.clipboard.create({
-      data: { content: JSON.stringify(payload) },
+      data: { content: JSON.stringify(payload), userId: req.userId },
     });
 
     res.json({ id: newEntry.id, createdAt: newEntry.createdAt });
-    broadcastSyncEvent('clipboard_updated');
+    broadcastSyncEvent(req.userId, 'clipboard_updated');
   } catch {
     res.status(500).json({ error: 'Failed to update clipboard' });
   }

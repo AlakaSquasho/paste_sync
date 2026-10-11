@@ -24,6 +24,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401 || error.response?.status === 403) {
       localStorage.removeItem('token');
+      localStorage.removeItem('username');
       // Simple redirect to login if unauthorized
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';

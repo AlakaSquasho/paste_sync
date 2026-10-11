@@ -10,7 +10,9 @@ services:
     environment:
       - PORT=3000
       - DATABASE_URL=file:./data/prod.db
-      - JWT_SECRET=${JWT_SECRET:-your_secret_key_here}
+      - JWT_SECRET=${JWT_SECRET:-}
+      - USERS=${USERS:-}
+      - DEFAULT_ACCOUNT=${DEFAULT_ACCOUNT:-}
       - SHARED_PASSWORD=${SHARED_PASSWORD:-123456}
       - LOG_DIR=/app/logs
       - IPINFO_API_KEY=${IPINFO_API_KEY:-}
